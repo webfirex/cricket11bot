@@ -19,7 +19,7 @@ users_joined_through_bot = []
 def start(update, context):
     # Get chat ID
     chat_id = update.effective_chat.id
-    
+
     # Get user details
     user = update.effective_user
 
@@ -42,7 +42,7 @@ def start(update, context):
 
     # Send a welcome message with an image and a button
     message = "Welcome to the Cricket 11 Assistant! Please click the button below to join our broadcast channel or if you want to contact our support then please leave a message below."
-    image_url = "https://imagetolink.com/ib/e6kuYJ65i5.png"  # Replace with your image URL
+    image_url = "https://imagetolink.com/ib/39cotFZ9cY.png"  # Replace with your image URL
     button_text_join = "Join Channel 🔥"
     button_text_support = "Chat Support 📞"
     button_text_rank = "Book 1st Rank ✅"
@@ -50,7 +50,7 @@ def start(update, context):
     support_button = InlineKeyboardButton(button_text_support, url="https://t.me/Nice2play")  # New button callback_data='contact_support'
     rank_button = InlineKeyboardButton(button_text_rank, url="https://cricket11team.com")  # Replace "YourChannel" with your channel username or invite link
     reply_markup = InlineKeyboardMarkup([[join_button], [support_button], [rank_button]])
-    
+
     context.bot.send_photo(chat_id=chat_id, photo=image_url, caption=message, reply_markup=reply_markup)
 
 # Define a function to append user data to user_data.json
@@ -102,7 +102,7 @@ def is_user_data_exists(user_id):
             return any(user['id'] == user_id for user in existing_data)
     except (FileNotFoundError, json.JSONDecodeError):
         return False
-    
+
 def load_chat_ids():
     chat_ids = []
     try:
@@ -135,9 +135,9 @@ def broadcast(update, context):
     if not context.args:
         update.message.reply_text("Please provide a message to broadcast.")
         return
-    
+
     message = ' '.join(context.args)
-    
+
     # Load chat IDs from chat_ids.json file
     chat_ids = load_chat_ids()
 
@@ -187,12 +187,12 @@ def send_message(update, context):
         update.message.reply_text("Please provide a message to send.")
         return
     message = ' '.join(context.args)
-    
+
     # Get user details
     user = update.effective_user
     user_details = f"User Details:\nFirst Name: {user.first_name}\nLast Name: {user.last_name}\nUsername: @{user.username}\nUser ID: {user.id}"
     full_message = f"{user_details}\n\n{message}"
-    
+
     # Forward the message to the channel
     context.bot.send_message(chat_id=CHANNEL_ID, text=full_message)
 
@@ -234,16 +234,16 @@ def main():
 
     # Register handler for the /message command
     dp.add_handler(CommandHandler("msg", send_message, pass_args=True))
-    
+
     # Register handler for the /userlist command
     dp.add_handler(CommandHandler("userlist", user_list))
-    
+
     # Register the contact support button callback
     dp.add_handler(CallbackQueryHandler(contact_support, pattern='contact_support'))
 
     # Register the handler for join requests
     dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, handle_join))
-    
+
     # Start the Bot
     updater.start_polling()
 
