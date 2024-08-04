@@ -1,17 +1,27 @@
 import json
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, Filters
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ChatPermissions
+from flask import Flask, request
+from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Dispatcher, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, CallbackContext
+import os
+
+# Initialize Flask app
+app = Flask(__name__)
 
 # Read bot token from token.txt file
 with open('token.txt', 'r') as file:
     TOKEN = file.read().strip()
+
+bot = Bot(token=TOKEN)
+
+# Initialize a Dispatcher with the bot instance
+dispatcher = Dispatcher(bot, None, workers=0)
 
 # Replace 'YOUR_CHANNEL_ID' with the ID of your channel
 CHANNEL_ID = '@testcricket11'
 
 # Your channel chat ID
 CHANNEL_CHAT_ID = -1001745510608  # Replace with your channel chat ID
- 
+
 # List to store users who joined through the bot's invite link
 users_joined_through_bot = []
 
@@ -216,39 +226,31 @@ def load_admin_ids():
         pass
     return admin_ids
 
-# List of chat IDs where the bot is available
-CHAT_IDS = []  # Add chat IDs here if needed
+# Define the Flask route for Telegram webhook
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    # Parse the incoming request as a Telegram update
+    update = Update.de_json(request.get_json(force=True), bot)
+    # Process the update with the dispatcher
+    dispatcher.process_update(update)
+    return 'ok', 200
 
-def main():
-    # Create an updater object
-    updater = Updater(TOKEN, use_context=True)
+# Endpoint to set the webhook
+@app.route('/set_webhook', methods=['GET', 'POST'])
+def set_webhook():
+    # Set the webhook URL to the Vercel deployment URL
+    webhook_url = f"https://cricket11bot.vercel.app/{TOKEN}"
+    bot.set_webhook(url=webhook_url)
+    return "Webhook set!", 200
 
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
-
-    # Register handler for the /start command
-    dp.add_handler(CommandHandler("start", start))
-
-    # Register handler for the /broadcast command
-    dp.add_handler(CommandHandler("broadcast", broadcast, pass_args=True))
-
-    # Register handler for the /message command
-    dp.add_handler(CommandHandler("msg", send_message, pass_args=True))
-
-    # Register handler for the /userlist command
-    dp.add_handler(CommandHandler("userlist", user_list))
-
-    # Register the contact support button callback
-    dp.add_handler(CallbackQueryHandler(contact_support, pattern='contact_support'))
-
-    # Register the handler for join requests
-    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, handle_join))
-
-    # Start the Bot
-    updater.start_polling()
-
-    # Run the bot until you press Ctrl-C
-    updater.idle()
+# Register handlers
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(CommandHandler("broadcast", broadcast, pass_args=True))
+dispatcher.add_handler(CommandHandler("msg", send_message, pass_args=True))
+dispatcher.add_handler(CommandHandler("userlist", user_list))
+dispatcher.add_handler(CallbackQueryHandler(contact_support, pattern='contact_support'))
+dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members, handle_join))
 
 if __name__ == '__main__':
-    main()
+    # Run the Flask app
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
